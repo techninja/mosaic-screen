@@ -12,7 +12,7 @@ const END_FRAME = 255;
 const FRAME_RATE = 30; // In Frame updates per second
 const width = 15;
 const height = 15;
-const serverPort = 8080;
+const serverPort = 80;
 const canvas = createCanvas(width, height);
 const ctx = canvas.getContext('2d', { antialias: 'none' })
 ctx.antial
