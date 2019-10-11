@@ -27,6 +27,7 @@ const appData = {
     pumpkin: { fps: 8 },
     skeleton: { fps: 8 },
     pickaxe: { fps: 5 },
+    nyan: { fps: 5 },
   },
 };
 
