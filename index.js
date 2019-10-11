@@ -282,9 +282,7 @@ try {
       sendFrame(port);
 
       // Start an animation to show it works.
-      animImage('nyan').then((interval) => {
-        currentInterval = interval;
-      });
+      currentInterval = ballBounce('white');
 
       port.on('close', (err) => {
         console.error('Closed!', err);
