@@ -26,6 +26,7 @@ const appData = {
     fire: { fps: 8 },
     pumpkin: { fps: 8 },
     skeleton: { fps: 8 },
+    pickaxe: { fps: 5 },
   },
 };
 
