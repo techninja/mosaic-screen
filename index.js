@@ -25,6 +25,7 @@ const appData = {
     rainbow: { fps: 24 },
     fire: { fps: 8 },
     pumpkin: { fps: 8 },
+    skeleton: { fps: 8 },
   },
 };
 
