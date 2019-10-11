@@ -50,6 +50,14 @@
   </div>
 </div>
 
+<div class="box">
+  <label class="label">
+    <span>Power:</span>
+  </label>
+  <div class="field" id="power">
+  </div>
+</div>
+
 <script type="text/javascript">
   function post(name, opts = true) {
     const data = {};
@@ -93,6 +101,17 @@
             font: 'Comic Sans',
             color,
           });
+        })
+    );
+  });
+
+  // Add power options
+  ['shutdown', 'restart'].forEach((option) => {
+    $('#power').append(
+      $('<button>')
+        .text(option)
+        .click(() => {
+          post('power', option);
         })
     );
   });

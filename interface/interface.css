@@ -3,7 +3,7 @@ body {
 }
 
 button {
-  width: 100px;
+  min-width: 100px;
   height: 100px;
   font-weight: bold;
   font-size: 1.5em;

@@ -3,6 +3,7 @@
  */
 const { createCanvas, loadImage } = require('canvas')
 const SerialPort = require('serialport');
+const { exec } = require('child_process');
 const options = {
   port: '/dev/ttyACM0',
   baudRate: 115200,
@@ -95,13 +96,16 @@ app.post('/data', (req, res) => {
     currentInterval = scrollText(change.scroll);
   }
 
+  // Shut down/restart!
+  if (change.power) {
+    clearInterval(currentInterval);
+    currentInterval = hostPower(change.power);
+  }
+
   res.send({status: 'ok'});
 });
 
-
-
-
-
+// Add custom scrolling text from left to right.
 function scrollText({ color = 'blue', text, size = '8', font = 'Arial', speed = 2 }) {
   ctx.fillStyle = color;
   ctx.font = `${size}px ${font}`;
@@ -129,7 +133,7 @@ function scrollText({ color = 'blue', text, size = '8', font = 'Arial', speed = 
   }, Math.round(1000 / 30));
 }
 
-
+// Bounce a ball around the screen.
 function ballBounce(color) {
   var p = { x: 5, y: 5 };
   var velo = 0.1,
@@ -140,7 +144,7 @@ function ballBounce(color) {
   var moveY = Math.sin(Math.PI / 180 * corner) * velo;
 
   function DrawMe() {
-      clearScreen()
+      clearScreen();
 
       if (ball.x > canvas.width - rad || ball.x < rad) moveX = -moveX;
       if (ball.y > canvas.height - rad || ball.y < rad) moveY = -moveY;
@@ -157,10 +161,12 @@ function ballBounce(color) {
   return setInterval(DrawMe, 10);
 }
 
+// Clear the screen.
 function clearScreen() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
+// Animate a horizontal sprite sheet image over 15px square.
 function animImage(name) {
   if (!appData.images[name]) {
     name = 'fire';
@@ -185,6 +191,40 @@ function animImage(name) {
       done(interval);
     });
   });
+}
+
+// Raspberry pi shutdown/restart
+function hostPower(option) {
+  let countdown = 5 + 4;
+  // Safety measure: unless we're running as root, these will just fail.
+  const cmd = option === 'shutdown' ? 'shutdown -h now' : 'reboot';
+
+  return setInterval(() => {
+    clearScreen();
+    if (countdown > 5) {
+      if (countdown % 2) {
+        ctx.fillStyle = 'red';
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = 'red';
+        ctx.fillRect(6, 7, 2, 7);
+        ctx.beginPath();
+        ctx.arc(7, 7, 6, 0, Math.PI * 2, true);
+        ctx.stroke();
+      }
+    } else if (countdown > -1) {
+      // Show the countdown.
+      ctx.font = `15px Impact`;
+      ctx.fillText(countdown, 3, 13);
+    } else if (countdown === -1) {
+      // Clear the screen, wait one sec...
+      clearScreen();
+    } else if (countdown === -2) {
+      // Actually run the command.
+      exec(cmd);
+    }
+
+    countdown--;
+  }, 1000);
 }
 
 
