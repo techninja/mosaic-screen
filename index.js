@@ -12,7 +12,7 @@ const END_FRAME = 255;
 const FRAME_RATE = 30; // In Frame updates per second
 const width = 15;
 const height = 15;
-const serverPort = 80;
+const serverPort = 8080;
 const canvas = createCanvas(width, height);
 const ctx = canvas.getContext('2d', { antialias: 'none' })
 ctx.antial
@@ -21,7 +21,7 @@ const appData = {
     heart: { fps: 3 },
     bird: { fps: 6 },
     eye: { fps: 10 },
-    flower: { fps: 6 },
+    flower: { fps: 2 },
     rainbow: { fps: 24 },
     fire: { fps: 8 },
     pumpkin: { fps: 8 },
