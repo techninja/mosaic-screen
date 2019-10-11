@@ -197,7 +197,7 @@ function animImage(name) {
 function hostPower(option) {
   let countdown = 5 + 4;
   // Safety measure: unless we're running as root, these will just fail.
-  const cmd = option === 'shutdown' ? 'shutdown -h now' : 'reboot';
+  const cmd = option === 'shutdown' ? '/sbin/shutdown -h now' : '/sbin/reboot';
 
   return setInterval(() => {
     clearScreen();
