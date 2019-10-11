@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Dorian's Mosaic Controller</title>
+  <script src="/jquery/jquery.min.js"></script>
+  <script src="/axios/axios.min.js"></script>
+  <link rel="stylesheet" href="/bulma/bulma.min.css">
+  <link rel="stylesheet" href="interface.css">
+</head>
+<body>
+<section class="hero is-dark is-bold">
+  <div class="hero-body">
+    <div class="container">
+      <button id="stop" class="is-pulled-right"></button>
+      <h1 class="title">Dorian's Mosaic</h1>
+      <p class="subtitle">
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="box">
+  <label class="label">
+    <span>Animations:</span>
+  </label>
+  <div class="field" id = "images">
+    Images...
+  </div>
+</div>
+
+
+<div class="box">
+  <label class="label">
+    <span>Bouncy Ball:</span>
+  </label>
+  <div class="field" id="balls">
+
+  </div>
+</div>
+
+<div class="box">
+  <label class="label">
+    <span>Scrolling Text:</span>
+  </label>
+  <div class="field" id="text">
+    <input type="text" value="Sample text">
+  </div>
+</div>
+
+<script type="text/javascript">
+  function post(name, opts = true) {
+    const data = {};
+    data[name] = opts;
+    return axios.post('data', data);
+  }
+
+  // Bind buttons.
+  $('#stop').click(() => {
+    post('stop');
+  });
+
+  const colors = [
+    'purple',
+    'blue',
+    'green',
+    'red',
+    'yellow',
+    'white',
+  ];
+
+  colors.forEach((color) => {
+    $('#balls').append(
+      $('<button>')
+        .text(color)
+        .css('background-color', color)
+        .click(() => {
+          post('ball', color);
+        })
+    );
+
+    $('#text').append(
+      $('<button>')
+        .text(color)
+        .css('background-color', color)
+        .click(() => {
+          post('scroll', {
+            text: $('#text input').val(),
+            size: 10,
+            speed: 2,
+            font: 'Comic Sans',
+            color,
+          });
+        })
+    );
+  });
+
+  // Get the images.
+  axios.get('data').then(({ data }) => {
+    $('#images').empty();
+    Object.keys(data.images).forEach((name) => {
+      $('#images').append(
+        $('<button>')
+          .attr('style', `background-image: url("/images/${name}.gif")`)
+          .text(name)
+          .click(() => {post('image', name)})
+      );
+    });
+
+  });
+</script>
+</body>
+</html>

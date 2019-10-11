@@ -1,0 +1,19 @@
+{
+  "name": "mosaic-screen",
+  "version": "1.0.0",
+  "description": "Controller for single line neopixel \"snake\" wrapped display",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index"
+  },
+  "author": "techninja",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "bulma": "^0.7.5",
+    "canvas": "^2.6.0",
+    "express": "^4.17.1",
+    "jquery": "^3.4.1",
+    "serialport": "^7.1.5"
+  }
+}
