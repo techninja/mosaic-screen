@@ -249,11 +249,14 @@ try {
 
       port.on('close', (err) => {
         console.error('Closed!', err);
+        process.exit(1);
       });
     } else {
       console.error(err);
+      process.exit(1);
     }
   });
 } catch (err) {
   console.error(err);
+  process.exit(1);
 }
