@@ -69,8 +69,6 @@ let currentInterval = null;
 app.post('/data', (req, res) => {
   const change = req.body;
 
-  //console.log('Req:', change);
-
   // Stop and clear all.
   if (change.stop) {
     clearInterval(currentInterval);
@@ -241,11 +239,12 @@ try {
     if (!err) {
       console.log('Connected!');
 
-      //console.time('send');
-
       sendFrame(port);
-      //console.dir(getFrameData());
 
+      // Start an animation to show it works.
+      animImage('nyan').then((interval) => {
+        currentInterval = interval;
+      });
 
       port.on('close', (err) => {
         console.error('Closed!', err);
