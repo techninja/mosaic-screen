@@ -22,7 +22,7 @@ button {
 }
 
 button#plasma {
-  background-image:url('images/plasma.gif');
+  background-image:url('/images/plasma.gif');
   background-size: cover;
 }
 
