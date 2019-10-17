@@ -16,7 +16,7 @@ const height = 15;
 const serverPort = 80;
 const canvas = createCanvas(width, height);
 const ctx = canvas.getContext('2d', { antialias: 'none' })
-ctx.antial
+
 const appData = {
   images: {
     heart: { fps: 3 },
@@ -230,6 +230,12 @@ function hostPower(option) {
 }
 
 
+
+// =============================================================================
+// Serial connection and frame sending code follows:
+// =============================================================================
+
+// Weave through all pixels on the canvas and generate a byte array for writing.
 function getFrameData() {
   // Get RGBA array of data
   const imageData = ctx.getImageData(0, 0, width, height).data;
@@ -251,31 +257,30 @@ function getFrameData() {
       imageData[offset + 1],
       imageData[offset + 2],
     ]));
-
-    // TODO: Reverse index on even fields for "snake" pattern.
   }
   bytes.push(END_FRAME);
   return bytes;
 }
 
+// Flatten any RGB byte triplet into a single 255 color byte.
 function rgbToByte([r, g, b]) {
   const byte = (Math.floor((r / 32)) << 5) + (Math.floor((g / 32)) << 2) + Math.floor((b / 64));
   // return the byte, reserving the highest bit for frame marking.
   return byte === 255 ? 254 : byte;
 }
 
+// Write the a scanline buffer from canvas to the serialport.
 function sendFrame(port) {
-  //console.time('send');
   const buffer = new Buffer.from(getFrameData());
 
   port.write(buffer, () => {
-    //console.timeEnd('send');
     setTimeout(() => {
       sendFrame(port);
     }, Math.round(1000 / FRAME_RATE));
   });
 }
 
+// Try to connect to the serial port and begin writing frames.
 try {
   port = new SerialPort(options.port, options, (err) => {
     if (!err) {
@@ -283,7 +288,7 @@ try {
 
       sendFrame(port);
 
-      // Start an animation to show it works.
+      // Start an animation to show it's on.
       currentInterval = ballBounce('white');
 
       port.on('close', (err) => {
