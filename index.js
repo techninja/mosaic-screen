@@ -69,6 +69,8 @@ app.get('/data', (req, res) => {
 let currentInterval = null;
 app.post('/data', (req, res) => {
   const change = req.body;
+  // Debug!:
+  // console.log('Got request:', change);
 
   // Stop and clear all.
   if (change.stop) {
