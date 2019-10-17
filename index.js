@@ -10,7 +10,7 @@ const options = {
 };
 
 const END_FRAME = 255;
-const FRAME_RATE = 30; // In Frame updates per second
+const FRAME_RATE = 60; // In Frame updates per second
 const width = 15;
 const height = 15;
 const serverPort = 80;
