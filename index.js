@@ -32,89 +32,96 @@ const appData = {
   },
 };
 
-
 // Server stuff
 const express = require('express');
 const http = require('http');
 const app = express();
 const httpServer = http.createServer(app);
 
-httpServer.listen(
-  serverPort,
-  null,
-  () => {
-    // Properly close down server on fail/close
-    process.on('SIGTERM', (err) => {
-      httpServer.close();
-    });
-  }
-);
-app.use('/', express.static('./interface/'));
-
-const nm = `./node_modules`;
-app.use('/bulma', express.static(`${nm}/bulma/css/`));
-app.use('/jquery', express.static(`${nm}/jquery/dist/`));
-app.use('/axios', express.static(`${nm}/axios/dist/`));
-app.use('/images', express.static(`./images/`));
-app.use(express.json());
-
-// Setup single I/O endpoint
-app.get('/data', (req, res) => {
-  res.set('Content-Type', 'application/json; charset=UTF-8');
-  res.send(appData);
-});
-
 
 // CONTROL API: ===============================================================
-let currentInterval = null;
-app.post('/data', (req, res) => {
-  const change = req.body;
+let currentInterval = null; // Interval for the currently running mode
+let rotationModeInterval = null; // Interval within the rotation mode
+function changeScreen(change) {
   // Debug!:
   // console.log('Got request:', change);
 
-  // Stop and clear all.
-  if (change.stop) {
+  // Run the screen promise, then reset the current global interval.
+  runScreen(change).then((interval) => {
     clearInterval(currentInterval);
-    clearScreen();
-  }
+    if (!change.rotate) clearInterval(rotationModeInterval);
+    currentInterval = interval;
+  });
+}
 
-  // Set an animated image
-  if (change.image) {
-    clearInterval(currentInterval);
-    animImage(change.image).then((interval) => {
-      currentInterval = interval;
+// Handler for running a change, returns a promise that resolves the interval.
+function runScreen(change) {
+  return new Promise((done, fail) => {
+    // Stop and clear all.
+    if (change.stop) {
+      clearScreen();
+      done(null);
+    } else if (change.image) {
+      // Set an animated image
+      animImage(change.image).then(done);
+    } else if (change.ball) {
+      // Bounce the ball
+      done(ballBounce(change.ball));
+    } else if (change.scroll) {
+      // Scroll text!
+      done(scrollText(change.scroll));
+    } else if (change.plasma) {
+      // Magic rainbow plasma
+      done(plasma());
+    } else if (change.power) {
+      // Shut down/restart!
+      done(hostPower(change.power));
+    } else if (change.rotate) {
+      // Rotate through
+      done(rotateModes(change.rotate));
+    } else {
+      fail();
+    }
+  });
+}
+
+// Get a random number excluding one.
+const getRand = (max, exclude) => {
+  let picked = exclude;
+  while (picked == exclude) {
+    picked = Math.floor(Math.random() * max);
+  }
+  return picked;
+};
+
+// Rotation mode.
+function rotateModes(seconds) {
+  let lastPick = null;
+  const options = [
+    { image: 'heart' }, { image: 'bird' }, { image: 'eye' }, { image: 'flower' },
+    { image: 'fire' }, { image: 'pumpkin' }, { image: 'skeleton' },
+    { image: 'pickaxe' }, { image: 'nyan' },
+
+    { plasma: true }, { plasma: true }, { plasma: true }, { plasma: true },
+  ];
+
+  const pickNext = () => {
+    const pick = getRand(options.length, lastPick);
+    lastPick = pick;
+
+    clearInterval(rotationModeInterval);
+    runScreen(options[pick]).then((interval) => {
+      rotationModeInterval = interval;
     });
-  }
+  };
 
-  // Bounce the ball
-  if (change.ball) {
-    clearInterval(currentInterval);
-    currentInterval = ballBounce(change.ball);
-  }
+  pickNext();
+  return setInterval(pickNext, seconds * 1000);
+}
 
-  // Scroll text!
-  if (change.scroll) {
-    clearInterval(currentInterval);
-    currentInterval = scrollText(change.scroll);
-  }
-
-  // Magic rainbow plasma
-  if (change.plasma) {
-    clearInterval(currentInterval);
-    currentInterval = plasma();
-  }
-
-  // Shut down/restart!
-  if (change.power) {
-    clearInterval(currentInterval);
-    currentInterval = hostPower(change.power);
-  }
-
-  res.send({status: 'ok'});
-});
 
 // Add custom scrolling text from left to right.
-function scrollText({ color = 'blue', text, size = '8', font = 'Arial', speed = 2 }) {
+function scrollText({ color = 'blue', text, size = '9', font = 'Arial', speed = 2 }) {
   ctx.fillStyle = color;
   ctx.font = `${size}px ${font}`;
   text = text.split('').join(String.fromCharCode(8202));
@@ -307,7 +314,7 @@ function HSVtoRGB(h, s, v) {
 }
 
 // =============================================================================
-// Serial connection and frame sending code follows:
+// =============== Init Serial connection and frame sending ====================
 // =============================================================================
 
 // Weave through all pixels on the canvas and generate a byte array for writing.
@@ -364,7 +371,7 @@ try {
       sendFrame(port);
 
       // Start an animation to show it's on.
-      currentInterval = ballBounce('white');
+      changeScreen({ ball: 'white' });
 
       port.on('close', (err) => {
         console.error('Closed!', err);
@@ -379,3 +386,36 @@ try {
   console.error(err);
   process.exit(1);
 }
+
+// =============================================================================
+// ======================== Setup Server Endpoint ==============================
+// =============================================================================
+httpServer.listen(
+  serverPort,
+  null,
+  () => {
+    // Properly close down server on fail/close
+    process.on('SIGTERM', (err) => {
+      httpServer.close();
+    });
+  }
+);
+app.use('/', express.static('./interface/'));
+
+const nm = `./node_modules`;
+app.use('/bulma', express.static(`${nm}/bulma/css/`));
+app.use('/jquery', express.static(`${nm}/jquery/dist/`));
+app.use('/axios', express.static(`${nm}/axios/dist/`));
+app.use('/images', express.static(`./images/`));
+app.use(express.json());
+
+// Setup single I/O endpoint
+app.get('/data', (req, res) => {
+  res.set('Content-Type', 'application/json; charset=UTF-8');
+  res.send(appData);
+});
+
+app.post('/data', (req, res) => {
+  const change = changeScreen(req.body);
+  res.send({status: 'ok'});
+});

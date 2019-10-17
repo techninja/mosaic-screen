@@ -15,6 +15,7 @@
   <div class="hero-body">
     <div class="container">
       <button id="stop" class="is-pulled-right"></button>
+      <button id="rotate" class="is-pulled-right"></button>
       <h1 class="title">Dorian's Mosaic</h1>
       <p class="subtitle">
       </p>
@@ -68,6 +69,10 @@
   // Bind buttons.
   $('#stop').click(() => {
     post('stop');
+  });
+
+  $('#rotate').click(() => {
+    post('rotate', 5);
   });
 
   const colors = [
