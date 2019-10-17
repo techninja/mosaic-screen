@@ -128,6 +128,14 @@
       );
     });
 
+    // Add plasma mode! Not really an image, but whatever...
+    $('#images').append(
+      $('<button>')
+        .attr('id', 'plasma')
+        .click(() => {post('plasma')})
+        .text('Plasma!')
+    );
+
   });
 </script>
 </body>

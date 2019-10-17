@@ -98,6 +98,12 @@ app.post('/data', (req, res) => {
     currentInterval = scrollText(change.scroll);
   }
 
+  // Magic rainbow plasma
+  if (change.plasma) {
+    clearInterval(currentInterval);
+    currentInterval = plasma();
+  }
+
   // Shut down/restart!
   if (change.power) {
     clearInterval(currentInterval);
@@ -229,7 +235,76 @@ function hostPower(option) {
   }, 1000);
 }
 
+// Run the random plasma animation at 60fps.
+function plasma() {
+  var w = canvas.width;
+  var h = canvas.height;
 
+  var buffer = new Array(h);
+
+  const mod = [
+    Math.random() * 64,
+    Math.random() * 64,
+    Math.random() * 64,
+  ];
+
+  for (var y = 0; y < h; y++) {
+    buffer[y] = new Array(w);
+    for (var x = 0; x < w; x++) {
+      var value = Math.sin(x / 16.0 / mod[0]);
+      value += Math.sin(y / 8.0 / mod[1]);
+      value += Math.sin((x + y) / 16.0 / mod[0]);
+      value += Math.sin(Math.sqrt(x * x + y * y) / 8.0 / mod[1]);
+      value += 4 / mod[2]; // shift range from -4 .. 4 to 0 .. 8
+      value /= 8 / mod[2]; // bring range down to 0 .. 1
+      buffer[y][x] = value;
+    }
+  }
+
+  var plasma = buffer;
+  var hueShift = 0;
+
+  return setInterval(() => {
+    var img = ctx.getImageData(0, 0, w, h);
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        var hue = hueShift + plasma[y][x] % 1;
+        var rgb = HSVtoRGB(hue, plasma[y][x], plasma[y][x]);
+        var pos = (y * w + x) * 4;
+        img.data[pos] = rgb.r;
+        img.data[pos + 1] = rgb.g;
+        img.data[pos + 2] = rgb.b;
+        img.data[pos + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    hueShift = (hueShift + 0.01) % 1;
+  }, Math.round(1000 / 60));
+}
+
+// Convert Hue, Saturation, & Brightness to Red, Green, & Blue
+function HSVtoRGB(h, s, v) {
+  var r, g, b, i, f, p, q, t;
+
+  i = Math.floor(h * 6);
+  f = h * 6 - i;
+  p = v * (1 - s);
+  q = v * (1 - f * s);
+  t = v * (1 - (1 - f) * s);
+  switch (i % 6) {
+    case 0: r = v, g = t, b = p; break;
+    case 1: r = q, g = v, b = p; break;
+    case 2: r = p, g = v, b = t; break;
+    case 3: r = p, g = q, b = v; break;
+    case 4: r = t, g = p, b = v; break;
+    case 5: r = v, g = p, b = q; break;
+  }
+  return {
+    r: Math.round(r * 255),
+    g: Math.round(g * 255),
+    b: Math.round(b * 255)
+  };
+}
 
 // =============================================================================
 // Serial connection and frame sending code follows:
