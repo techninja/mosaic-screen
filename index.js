@@ -15,7 +15,8 @@ const END_FRAME = 255;
 const FRAME_RATE = 60; // In Frame updates per second
 const width = 15;
 const height = 15;
-const serverPort = 80;
+const serverPort = 443;
+const useSSL = true;
 const canvas = createCanvas(width, height);
 const ctx = canvas.getContext('2d', { antialias: 'none' })
 
@@ -36,9 +37,19 @@ const appData = {
 
 // Server stuff
 const express = require('express');
-const http = require('http');
+const http = useSSL ? require('https') : require('http');
 const app = express();
-const httpServer = http.createServer(app);
+
+// Run: openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
+// To get SSL working, create a config.js file above the repo that looks like
+// this after creating your files:
+//
+// export = {
+//    key: fs.readFileSync('./key.pem'),
+//    cert: fs.readFileSync('./cert.pem'),
+//    passphrase: 'YOUR PASSPHRASE HERE'
+// };
+const httpServer = useSSL ? http.createServer(require('../config.js'), app) : http.createServer(app);
 const io = socketio(httpServer);
 // SOCKET DATA STREAM ========================================================
 io.on('connection', (socket) => {
