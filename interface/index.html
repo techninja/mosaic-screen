@@ -7,6 +7,7 @@
   <title>Dorian's Mosaic Controller</title>
   <script src="/jquery/jquery.min.js"></script>
   <script src="/axios/axios.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="/bulma/bulma.min.css">
   <link rel="stylesheet" href="interface.css">
 </head>
@@ -51,6 +52,29 @@
   </div>
 </div>
 
+
+<div class="box">
+  <label class="label">
+    <span>Desktop Stream:</span>
+  </label>
+  <div class="field">
+    <button id="start-capture">Start</button>
+    <button id="stop-capture">Stop</button>
+  </div>
+  <div class="field">
+    <video id="video" autoplay></video>
+    <canvas id="vcap" width="15" height="15"></canvas>
+
+    <br>
+
+    <strong>Log:</strong>
+    <br>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+
+
 <div class="box">
   <label class="label">
     <span>Power:</span>
@@ -60,6 +84,8 @@
 </div>
 
 <script type="text/javascript">
+  const socket = io();
+
   function post(name, opts = true) {
     const data = {};
     data[name] = opts;
@@ -142,6 +168,102 @@
     );
 
   });
+
+  const videoElem = document.getElementById("video");
+  const logElem = document.getElementById("log");
+
+  async function startCapture() {
+    const displayMediaOptions = {
+      video: {
+        cursor: "never"
+      },
+      audio: false
+    };
+    logElem.innerHTML = "";
+
+    try {
+      videoElem.srcObject = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+    } catch (err) {
+      console.error("Error: " + err);
+    }
+  }
+
+  const c1 = document.getElementById('vcap');
+  const ctx = c1.getContext('2d');
+  videoElem.addEventListener('play', function () {
+    console.log('Playing!');
+    timerCallback();
+  }, false);
+
+  function timerCallback() {
+    if (videoElem.paused || videoElem.ended) {
+      return;
+    }
+
+    // Draw frame
+    ctx.drawImage(videoElem, 0, 32, videoElem.videoWidth, videoElem.videoHeight, 0, 0, 15, 16 );
+    socket.emit('frame', getFrameData());
+
+    setTimeout(function () {
+      timerCallback();
+    }, 1000 / 30);
+  }
+
+
+  function stopCapture() {
+    let tracks = videoElem.srcObject.getTracks();
+
+    tracks.forEach(track => track.stop());
+    videoElem.srcObject = null;
+    socket.emit('end');
+  }
+
+  // Set event listeners for the start and stop buttons
+  $('#start-capture').click(() => {
+    startCapture();
+  });
+
+  $('#stop-capture').click(() => {
+    stopCapture();
+  });
+
+
+  // Weave through all pixels on the canvas and generate a byte array for writing.
+  function getFrameData() {
+    // Get RGBA array of data
+    const [width, height] = [15, 15];
+    const imageData = ctx.getImageData(0, 0, width, height).data;
+    const bytes = [];
+    const rowWidth = width * 4;
+    for (let index = 0; index < width * height * 4; index = index + 4) {
+      let offset = index;
+      let row = Math.floor((index / 4) / width);
+
+      // Even rows need to be read backwards
+      if (row & 1) {
+        const rowStart = (rowWidth * row);
+        const rowEnd = rowStart + rowWidth;
+        offset = rowStart + (rowEnd - index - 4);
+      }
+
+      bytes.push(rgbToByte([
+        imageData[offset],
+        imageData[offset + 1],
+        imageData[offset + 2],
+      ]));
+    }
+    bytes.push(255);
+    return bytes;
+  }
+
+  // Flatten any RGB byte triplet into a single 255 color byte.
+  function rgbToByte([r, g, b]) {
+    const byte = (Math.floor((r / 32)) << 5) + (Math.floor((g / 32)) << 2) + Math.floor((b / 64));
+    // return the byte, reserving the highest bit for frame marking.
+    return byte === 255 ? 254 : byte;
+  }
+
+
 </script>
 </body>
 </html>

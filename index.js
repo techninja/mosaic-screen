@@ -3,6 +3,8 @@
  */
 const { createCanvas, loadImage } = require('canvas')
 const SerialPort = require('serialport');
+let port; // Serial port object after init
+const socketio = require('socket.io');
 const { exec } = require('child_process');
 const options = {
   port: '/dev/ttyACM0',
@@ -37,6 +39,23 @@ const express = require('express');
 const http = require('http');
 const app = express();
 const httpServer = http.createServer(app);
+const io = socketio(httpServer);
+// SOCKET DATA STREAM ========================================================
+io.on('connection', (socket) => {
+  socket.on('end', () => {
+    startSyncCanvas();
+  });
+
+  socket.on('frame', (data) => {
+    stopSyncCanvas();
+    sendFrame(data);
+  });
+
+  socket.on('disconnect', () => {
+    startSyncCanvas();
+  });
+});
+
 
 
 // CONTROL API: ===============================================================
@@ -352,14 +371,20 @@ function rgbToByte([r, g, b]) {
 }
 
 // Write the a scanline buffer from canvas to the serialport.
-function sendFrame(port) {
-  const buffer = new Buffer.from(getFrameData());
+function sendFrame(externalData) {
+  const buffer = new Buffer.from(externalData || getFrameData());
+  port.write(buffer);
+}
 
-  port.write(buffer, () => {
-    setTimeout(() => {
-      sendFrame(port);
-    }, Math.round(1000 / FRAME_RATE));
-  });
+let syncCanvasInterval = null;
+function startSyncCanvas() {
+  syncCanvasInterval = setInterval(() => {
+    sendFrame();
+  }, Math.round(1000 / FRAME_RATE));
+}
+
+function stopSyncCanvas() {
+  clearInterval(syncCanvasInterval);
 }
 
 // Try to connect to the serial port and begin writing frames.
@@ -368,7 +393,7 @@ try {
     if (!err) {
       console.log('Connected!');
 
-      sendFrame(port);
+      startSyncCanvas();
 
       // Start an animation to show it's on.
       changeScreen({ ball: 'white' });
