@@ -404,7 +404,7 @@ try {
 // this after creating your files:
 //
 // const fs = require('fs');
-// exports = {
+// module.exports = {
 //   key: fs.readFileSync('../key.pem'),
 //   cert: fs.readFileSync('../cert.pem')
 // };
