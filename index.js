@@ -40,35 +40,6 @@ const express = require('express');
 const http = useSSL ? require('https') : require('http');
 const app = express();
 
-// Run: openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
-// To get SSL working, create a config.js file above the repo that looks like
-// this after creating your files:
-//
-// export = {
-//    key: fs.readFileSync('./key.pem'),
-//    cert: fs.readFileSync('./cert.pem'),
-//    passphrase: 'YOUR PASSPHRASE HERE'
-// };
-const httpServer = useSSL ? http.createServer(require('../config.js'), app) : http.createServer(app);
-const io = socketio(httpServer);
-// SOCKET DATA STREAM ========================================================
-io.on('connection', (socket) => {
-  socket.on('end', () => {
-    startSyncCanvas();
-  });
-
-  socket.on('frame', (data) => {
-    stopSyncCanvas();
-    sendFrame(data);
-  });
-
-  socket.on('disconnect', () => {
-    startSyncCanvas();
-  });
-});
-
-
-
 // CONTROL API: ===============================================================
 let currentInterval = null; // Interval for the currently running mode
 let rotationModeInterval = null; // Interval within the rotation mode
@@ -426,16 +397,35 @@ try {
 // =============================================================================
 // ======================== Setup Server Endpoint ==============================
 // =============================================================================
-httpServer.listen(
-  serverPort,
-  null,
-  () => {
-    // Properly close down server on fail/close
-    process.on('SIGTERM', (err) => {
-      httpServer.close();
-    });
-  }
-);
+// To get SSL working...
+// Run: openssl req -nodes -new -x509 -keyout key.pem -out cert.pem
+//
+// Create a ssl_config.js file above the repo that looks like
+// this after creating your files:
+//
+// const fs = require('fs');
+// exports = {
+//   key: fs.readFileSync('../key.pem'),
+//   cert: fs.readFileSync('../cert.pem')
+// };
+const httpServer = useSSL ? http.createServer(require('../ssl_config.js'), app) : http.createServer(app);
+const io = socketio(httpServer);
+// SOCKET DATA STREAM ========================================================
+io.on('connection', (socket) => {
+  socket.on('end', () => {
+    startSyncCanvas();
+  });
+
+  socket.on('frame', (data) => {
+    stopSyncCanvas();
+    sendFrame(data);
+  });
+
+  socket.on('disconnect', () => {
+    startSyncCanvas();
+  });
+});
+
 app.use('/', express.static('./interface/'));
 
 const nm = `./node_modules`;
@@ -455,3 +445,14 @@ app.post('/data', (req, res) => {
   const change = changeScreen(req.body);
   res.send({status: 'ok'});
 });
+
+httpServer.listen(
+  serverPort,
+  null,
+  () => {
+    // Properly close down server on fail/close
+    process.on('SIGTERM', (err) => {
+      httpServer.close();
+    });
+  }
+);
